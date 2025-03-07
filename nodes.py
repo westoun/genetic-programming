@@ -72,6 +72,34 @@ class LeafConstructor:
         raise NotImplementedError()
 
 
+class ConstantValueLeaf(Leaf):
+    name: str
+    value: float
+
+    def __init__(self, name: str, value: float):
+        self.name = name
+        self.value = value
+
+    def __call__(self, case_i: int) -> float:
+        return self.value
+
+    def __repr__(self, tabs: int = 0) -> str:
+        repr = "\t" * tabs + f"{self.name}={self.value}"
+        return repr
+
+
+class ConstantValueLeafConstructor(LeafConstructor):
+    name: str
+    value: float
+
+    def __init__(self, name: str, value: float):
+        self.name = name
+        self.value = value
+
+    def __call__(self) -> ConstantValueLeaf:
+        return ConstantValueLeaf(self.name, self.value)
+
+
 class ValueListLeaf(Leaf):
     name: str
     values: List[float]
@@ -140,7 +168,7 @@ class OptimizableLeaf(Leaf):
 
     def __call__(self, case_i: int) -> float:
         return self.value
-    
+
     def __repr__(self, tabs: int = 0) -> str:
         repr = "\t" * tabs + f"{self.name}={round(self.value, 2)}"
         return repr
