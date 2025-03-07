@@ -15,9 +15,9 @@ class Node:
 
 class Operator(Node):
     name: str
-    parent: Node
-    child1: Node
-    child2: Node
+    parent: Node = None
+    child1: Node = None
+    child2: Node = None
     func: Callable[[float, float], float]
 
     def __init__(self, name: str, func: Callable[[float, float], float]):

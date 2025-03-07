@@ -30,33 +30,78 @@ def generate_random_tree(
     if depth == 1:
         return random.choice(LeafConstructors)()
 
-    previous_level_nodes: List[Node] = []
-    current_level_nodes: List[Node] = []
+    NodeConstructors = OperatorConstructors + LeafConstructors
+    root = random.choice(NodeConstructors)()
 
-    for i in range(depth):
-        current_level_nodes = []
+    current_depth_nodes = [root]
+    next_depth_nodes = []
+    
+    for i in range(depth - 1):
 
-        current_level_node_count = 2 ** (depth - i - 1)
+        for node in current_depth_nodes:
+            if issubclass(node.__class__, Leaf):
+                continue 
 
-        if i == 0:
-            for _ in range(current_level_node_count):
-                node: Leaf = random.choice(LeafConstructors)()
-                current_level_nodes.append(node)
+            child1 = random.choice(NodeConstructors)()
+            child2 = random.choice(NodeConstructors)()
 
-        else:
-            for j in range(current_level_node_count):
-                node: Operator = random.choice(OperatorConstructors)()
-                node.child1 = previous_level_nodes[2 * j]
-                node.child2 = previous_level_nodes[2 * j + 1]
-                previous_level_nodes[2 * j].parent = node
-                previous_level_nodes[2 * j + 1].parent = node
+            node.child1 = child1 
+            child1.parent = node 
 
-                current_level_nodes.append(node)
+            node.child2 = child2 
+            child2.parent = node 
 
-        previous_level_nodes = current_level_nodes
+            next_depth_nodes.append(child1)
+            next_depth_nodes.append(child2)
 
-    assert len(current_level_nodes) == 1
-    return current_level_nodes[0]
+        current_depth_nodes = next_depth_nodes
+        next_depth_nodes = []
+
+    for node in current_depth_nodes:
+        if issubclass(node.__class__, Leaf):
+            continue
+
+        if node.child1 is None:
+            child1 = random.choice(LeafConstructors)()
+            
+            node.child1 = child1 
+            child1.parent = node
+
+        if node.child2 is None:
+            child2 = random.choice(LeafConstructors)()
+            
+            node.child2 = child2
+            child2.parent = node
+
+    return root
+
+    # previous_level_nodes: List[Node] = []
+    # current_level_nodes: List[Node] = []
+
+    # for i in range(depth):
+    #     current_level_nodes = []
+
+    #     current_level_node_count = 2 ** (depth - i - 1)
+
+    #     if i == 0:
+    #         for _ in range(current_level_node_count):
+    #             node: Leaf = random.choice(LeafConstructors)()
+    #             current_level_nodes.append(node)
+
+    #     else:
+    #         for j in range(current_level_node_count):
+    #             node: Operator = random.choice(OperatorConstructors)()
+    #             node.child1 = previous_level_nodes[2 * j]
+    #             node.child2 = previous_level_nodes[2 * j + 1]
+    #             previous_level_nodes[2 * j].parent = node
+    #             previous_level_nodes[2 * j + 1].parent = node
+
+    #             current_level_nodes.append(node)
+
+    #     previous_level_nodes = current_level_nodes
+
+    # assert len(current_level_nodes) == 1
+    # return current_level_nodes[0]
 
 
 def compute_depth(tree: Node) -> int:
