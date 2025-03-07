@@ -60,7 +60,7 @@ def evaluate(tree: Node, targets: List[float]) -> None:
         tree.fitness = fitness
         return
 
-    bounds = [(-10000, 10000) for _ in initial_params]
+    bounds = [(-1000, 1000) for _ in initial_params]
 
     objective_function = partial(scipy_objective_function, tree=tree, targets=targets)
 
@@ -117,11 +117,11 @@ def load_experiment_data() -> Tuple[List[ValueListLeafConstructor], List[float]]
 
 
 if __name__ == "__main__":
-    GENERATIONS: int = 100
+    GENERATIONS: int = 200
     POPULATION_SIZE: int = 1000
-    MUTATION_PROB: float = 0.2
+    MUTATION_PROB: float = 0.3
     CROSSOVER_PROB: float = 0.5
-    MAX_DEPTH: int = 3
+    MAX_DEPTH: int = 8
 
     FITNESS_THRESHOLD: float = 0.000005
 
@@ -135,12 +135,14 @@ if __name__ == "__main__":
         OperatorConstructor("divide", divide),
     ]
     LEAVES = [
-        OptimizableLeafConstructor("c_opt"),
-        OptimizableLeafConstructor("c0"),
-        OptimizableLeafConstructor("c1"),
-        OptimizableLeafConstructor("c2"),
-        OptimizableLeafConstructor("c3"),
-        OptimizableLeafConstructor("c4"),
+        OptimizableLeafConstructor("opt_c0"),
+        OptimizableLeafConstructor("opt_c1"),
+        OptimizableLeafConstructor("opt_c2"),
+        OptimizableLeafConstructor("opt_c3"),
+        RandomIntLeafConstructor("rand_c0", -10, 10),
+        RandomIntLeafConstructor("rand_c1", -100, 100),
+        RandomIntLeafConstructor("rand_c2", -1000, 1000),
+        RandomIntLeafConstructor("rand_c3", -10000, 10000),
     ]
 
     value_list_constructors, TARGETS = load_experiment_data()
@@ -174,20 +176,21 @@ if __name__ == "__main__":
 
         population = select(population=population + offspring, k=POPULATION_SIZE)
 
-        population = remove_duplicates(population)
-        for _ in range(POPULATION_SIZE - len(population)):
-            new_tree = generate_random_tree(
-                OPERATORS, LEAVES, min_depth=1, max_depth=MAX_DEPTH
-            )
-            evaluate(new_tree, targets=TARGETS)
-            population.append(new_tree)
+        # population = remove_duplicates(population)
+        # for _ in range(POPULATION_SIZE - len(population)):
+        #     new_tree = generate_random_tree(
+        #         OPERATORS, LEAVES, min_depth=1, max_depth=MAX_DEPTH
+        #     )
+        #     evaluate(new_tree, targets=TARGETS)
+        #     population.append(new_tree)
 
         mean_fitness = mean([tree.fitness for tree in population])
         best_fitness = min([tree.fitness for tree in population])
 
-        print("")
-        print(f"Best fitness at gen={generation + 1}: {best_fitness}")
-        print(f"Mean fitness at gen={generation + 1}: {mean_fitness}")
+        if (generation + 1) % 5 == 0:
+            print("")
+            print(f"Best fitness at gen={generation + 1}: {best_fitness}")
+            print(f"Mean fitness at gen={generation + 1}: {mean_fitness}")
 
         if best_fitness < FITNESS_THRESHOLD:
             print(
