@@ -12,6 +12,12 @@ class Node:
     def __repr__(self, tabs: int = 0) -> None:
         raise NotImplementedError()
 
+    def __hash__(self):
+        return hash(self.__repr__())
+
+    def __eq__(self, node: "Node") -> bool:
+        return self.__hash__() == node.__hash__()
+
 
 class Operator(Node):
     name: str

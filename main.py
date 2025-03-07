@@ -107,6 +107,8 @@ def flatten_tree(tree: Node) -> List[Node]:
         flattened_tree.extend(flatten_tree(tree.child2))
         return flattened_tree
 
+def remove_duplicates(population: List[Node]) -> List[Node]:
+    return list(set(population))
 
 def crossover(tree1: Node, tree2: Node) -> None:
     swap_point1: Node = select_random_node(tree1)
@@ -218,7 +220,7 @@ if __name__ == "__main__":
         OperatorConstructor("subtract", subtract),
         OperatorConstructor("multiply", multiply),
         OperatorConstructor("divide", divide),
-        OperatorConstructor("pow", pow),
+        # OperatorConstructor("pow", pow),
     ]
     LEAVES = [
         ValueListLeafConstructor("x", INPUTS),
@@ -248,6 +250,13 @@ if __name__ == "__main__":
             compute_fitness(tree, targets=TARGETS)
 
         population = select(population=population + offspring, k=POPULATION_SIZE)
+
+        population = remove_duplicates(population)
+        for _ in range(POPULATION_SIZE - len(population)):
+            new_tree = generate_random_tree(OPERATORS, LEAVES, min_depth=1, max_depth=MAX_DEPTH)
+            compute_fitness(new_tree, targets=TARGETS)
+            population.append(new_tree)
+
 
         mean_fitness = mean([tree.fitness for tree in population])
         best_fitness = min([tree.fitness for tree in population])
