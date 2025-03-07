@@ -107,8 +107,10 @@ def flatten_tree(tree: Node) -> List[Node]:
         flattened_tree.extend(flatten_tree(tree.child2))
         return flattened_tree
 
+
 def remove_duplicates(population: List[Node]) -> List[Node]:
     return list(set(population))
+
 
 def crossover(tree1: Node, tree2: Node) -> None:
     swap_point1: Node = select_random_node(tree1)
@@ -190,27 +192,34 @@ def mutate(
         raise AssertionError()
 
 
-def select(population: List[Node], k: int, tourn_size: int = 2) -> List[None]:
-    selection = []
+# def select(population: List[Node], k: int, tourn_size: int = 2) -> List[None]:
+#     selection = []
 
-    for _ in range(k):
-        contestors = [random.choice(population) for _ in range(tourn_size)]
-        scores = [tree.fitness for tree in contestors]
-        min_score = min(scores)
-        min_idx = scores.index(min_score)
+#     for _ in range(k):
+#         contestors = [random.choice(population) for _ in range(tourn_size)]
+#         scores = [tree.fitness for tree in contestors]
+#         min_score = min(scores)
+#         min_idx = scores.index(min_score)
 
-        winner = contestors[min_idx]
-        selection.append(deepcopy(winner))
+#         winner = contestors[min_idx]
+#         selection.append(deepcopy(winner))
 
-    return selection
+#     return selection
+
+
+def select(population: List[Node], k: int) -> List[None]:
+    population.sort(key=lambda tree: tree.fitness, reverse=False)
+    return population[:k]
 
 
 if __name__ == "__main__":
     GENERATIONS: int = 100
     POPULATION_SIZE: int = 100
-    MUTATION_PROB: float = 0.3
+    MUTATION_PROB: float = 0.2
     CROSSOVER_PROB: float = 0.5
     MAX_DEPTH: int = 4
+
+    FITNESS_THRESHOLD: float = 0.000005
 
     INPUTS: List[float] = [-2, -1, 0, 1, 2]
     TARGETS: List[float] = [1, -2, -3, -2, 1]
@@ -238,6 +247,10 @@ if __name__ == "__main__":
 
         offspring = deepcopy(population)
 
+        # Shuffle to avoid crossover in the same proximity across
+        # generations.
+        random.shuffle(offspring)
+
         for tree1, tree2 in zip(offspring[:-1], offspring[1:]):
             if random.random() < CROSSOVER_PROB:
                 crossover(tree1, tree2)
@@ -253,10 +266,11 @@ if __name__ == "__main__":
 
         population = remove_duplicates(population)
         for _ in range(POPULATION_SIZE - len(population)):
-            new_tree = generate_random_tree(OPERATORS, LEAVES, min_depth=1, max_depth=MAX_DEPTH)
+            new_tree = generate_random_tree(
+                OPERATORS, LEAVES, min_depth=1, max_depth=MAX_DEPTH
+            )
             compute_fitness(new_tree, targets=TARGETS)
             population.append(new_tree)
-
 
         mean_fitness = mean([tree.fitness for tree in population])
         best_fitness = min([tree.fitness for tree in population])
@@ -264,6 +278,12 @@ if __name__ == "__main__":
         print("")
         print(f"Best fitness at gen={generation + 1}: {best_fitness}")
         print(f"Mean fitness at gen={generation + 1}: {mean_fitness}")
+
+        if best_fitness < FITNESS_THRESHOLD:
+            print(
+                f"\nBreaking at gen={generation + 1} since best fitness below threshold."
+            )
+            break
 
     population.sort(key=lambda tree: tree.fitness, reverse=False)
     for i in range(3):
