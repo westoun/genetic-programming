@@ -4,6 +4,9 @@ from nodes import (
     Node,
     LeafConstructor,
     OperatorConstructor,
+)
+
+from node_utils import (
     select_random_node,
     compute_depth,
     generate_random_tree,

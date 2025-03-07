@@ -16,8 +16,8 @@ from nodes import (
     ValueListLeafConstructor,
     RandomIntLeaf,
     RandomIntLeafConstructor,
-    generate_random_tree,
 )
+from node_utils import generate_random_tree
 
 from ga_operators import crossover, mutate, select, remove_duplicates
 
@@ -32,7 +32,7 @@ def compute_fitness(tree: Node, targets: List[float]):
             total_deviation += abs(y - target)
         except OverflowError:
             total_deviation = 100000
-            break 
+            break
 
     tree.fitness = total_deviation
 
