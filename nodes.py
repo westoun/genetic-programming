@@ -140,6 +140,10 @@ class OptimizableLeaf(Leaf):
 
     def __call__(self, case_i: int) -> float:
         return self.value
+    
+    def __repr__(self, tabs: int = 0) -> str:
+        repr = "\t" * tabs + f"{self.name}={round(self.value, 2)}"
+        return repr
 
 
 class OptimizableLeafConstructor(LeafConstructor):

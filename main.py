@@ -4,7 +4,10 @@ from typing import Set, List, Callable, Type, Tuple
 from statistics import mean
 from functools import partial
 
-from functions import add, subtract, multiply, divide, pow
+import numpy as np
+from scipy.optimize import minimize, OptimizeResult
+
+from functions import add, subtract, multiply, divide
 
 from nodes import (
     Node,
@@ -16,29 +19,62 @@ from nodes import (
     ValueListLeafConstructor,
     RandomIntLeaf,
     RandomIntLeafConstructor,
+    OptimizableLeaf,
+    OptimizableLeafConstructor,
 )
-from node_utils import generate_random_tree
+from node_utils import generate_random_tree, update_params, extract_params
 
 from ga_operators import crossover, mutate, select, remove_duplicates
 
 
 def compute_fitness(tree: Node, targets: List[float]) -> float:
-    total_deviation = 0
+    try:
+        total_deviation = 0
 
-    for i, target in enumerate(targets):
-        y = tree(case_i=i)
+        for i, target in enumerate(targets):
+            y = tree(case_i=i)
 
-        try:
             total_deviation += abs(y - target)
-        except OverflowError:
-            return 100000
 
-    return total_deviation
+        return total_deviation
+    except KeyboardInterrupt:
+        raise KeyboardInterrupt()
+    except:
+        return np.inf
 
 
-def annotate_fitness(tree: Node, targets: List[float]) -> None:
+def scipy_objective_function(
+    params: List[float], tree: Node, targets: List[float]
+) -> float:
+    update_params(tree, params)
     fitness = compute_fitness(tree, targets)
     tree.fitness = fitness
+    return fitness
+
+
+def evaluate(tree: Node, targets: List[float]) -> None:
+    initial_params = extract_params(tree)
+
+    if len(initial_params) == 0:
+        fitness = compute_fitness(tree, targets)
+        tree.fitness = fitness
+        return
+
+    bounds = [(-10000, 10000) for _ in initial_params]
+
+    objective_function = partial(scipy_objective_function, tree=tree, targets=targets)
+
+    optimization_result: OptimizeResult = minimize(
+        objective_function,
+        x0=initial_params,
+        method="Nelder-Mead",
+        bounds=bounds,
+        tol=0,
+        options={"maxiter": 10, "disp": False},
+    )
+
+    best_params = optimization_result.x
+    update_params(tree, best_params)
 
 
 def load_experiment_data() -> Tuple[List[ValueListLeafConstructor], List[float]]:
@@ -82,17 +118,15 @@ def load_experiment_data() -> Tuple[List[ValueListLeafConstructor], List[float]]
 
 if __name__ == "__main__":
     GENERATIONS: int = 100
-    POPULATION_SIZE: int = 500
+    POPULATION_SIZE: int = 1000
     MUTATION_PROB: float = 0.2
     CROSSOVER_PROB: float = 0.5
-    MAX_DEPTH: int = 8
+    MAX_DEPTH: int = 3
 
     FITNESS_THRESHOLD: float = 0.000005
 
     # INPUTS: List[float] = [-2, -1, 0, 1, 2]
     # TARGETS: List[float] = [1, -2, -3, -2, 1]
-
-    value_list_constructors, TARGETS = load_experiment_data()
 
     OPERATORS: List[OperatorConstructor] = [
         OperatorConstructor("add", add),
@@ -101,9 +135,15 @@ if __name__ == "__main__":
         OperatorConstructor("divide", divide),
     ]
     LEAVES = [
-        # ValueListLeafConstructor("x", INPUTS),
-        RandomIntLeafConstructor("c", min_value=-100, max_value=100),
+        OptimizableLeafConstructor("c_opt"),
+        OptimizableLeafConstructor("c0"),
+        OptimizableLeafConstructor("c1"),
+        OptimizableLeafConstructor("c2"),
+        OptimizableLeafConstructor("c3"),
+        OptimizableLeafConstructor("c4"),
     ]
+
+    value_list_constructors, TARGETS = load_experiment_data()
     LEAVES.extend(value_list_constructors)
 
     population: List[Node] = [
@@ -111,7 +151,7 @@ if __name__ == "__main__":
         for _ in range(POPULATION_SIZE)
     ]
     for tree in population:
-        annotate_fitness(tree, targets=TARGETS)
+        evaluate(tree, targets=TARGETS)
 
     for generation in range(GENERATIONS):
 
@@ -130,7 +170,7 @@ if __name__ == "__main__":
                 mutate(tree, OPERATORS, LEAVES)
 
         for tree in offspring:
-            annotate_fitness(tree, targets=TARGETS)
+            evaluate(tree, targets=TARGETS)
 
         population = select(population=population + offspring, k=POPULATION_SIZE)
 
@@ -139,7 +179,7 @@ if __name__ == "__main__":
             new_tree = generate_random_tree(
                 OPERATORS, LEAVES, min_depth=1, max_depth=MAX_DEPTH
             )
-            annotate_fitness(new_tree, targets=TARGETS)
+            evaluate(new_tree, targets=TARGETS)
             population.append(new_tree)
 
         mean_fitness = mean([tree.fitness for tree in population])

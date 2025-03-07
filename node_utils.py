@@ -1,6 +1,6 @@
 from typing import List
 import random
-from nodes import Node, Leaf, OperatorConstructor, LeafConstructor
+from nodes import Node, Leaf, OperatorConstructor, LeafConstructor, OptimizableLeaf
 
 
 def select_random_node(
@@ -92,3 +92,26 @@ def generate_random_tree(
             child2.parent = node
 
     return root
+
+
+def get_optimizable_nodes(tree: Node) -> List[OptimizableLeaf]:
+    nodes = flatten_tree(tree)
+
+    optimizable_nodes = []
+    for node in nodes:
+        if type(node) == OptimizableLeaf:
+            optimizable_nodes.append(node)
+
+    return optimizable_nodes
+
+
+def extract_params(tree: Node) -> List[float]:
+    nodes = get_optimizable_nodes(tree)
+    params = [node.value for node in nodes]
+    return params
+
+
+def update_params(tree: Node, params: List[float]) -> None:
+    nodes = get_optimizable_nodes(tree)
+    for node, param in zip(nodes, params):
+        node.value = param
