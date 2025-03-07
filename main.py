@@ -22,7 +22,7 @@ from node_utils import generate_random_tree
 from ga_operators import crossover, mutate, select, remove_duplicates
 
 
-def compute_fitness(tree: Node, targets: List[float]):
+def compute_fitness(tree: Node, targets: List[float]) -> float:
     total_deviation = 0
 
     for i, target in enumerate(targets):
@@ -31,10 +31,14 @@ def compute_fitness(tree: Node, targets: List[float]):
         try:
             total_deviation += abs(y - target)
         except OverflowError:
-            total_deviation = 100000
-            break
+            return 100000
 
-    tree.fitness = total_deviation
+    return total_deviation
+
+
+def annotate_fitness(tree: Node, targets: List[float]) -> None:
+    fitness = compute_fitness(tree, targets)
+    tree.fitness = fitness
 
 
 def load_experiment_data() -> Tuple[List[ValueListLeafConstructor], List[float]]:
@@ -107,7 +111,7 @@ if __name__ == "__main__":
         for _ in range(POPULATION_SIZE)
     ]
     for tree in population:
-        compute_fitness(tree, targets=TARGETS)
+        annotate_fitness(tree, targets=TARGETS)
 
     for generation in range(GENERATIONS):
 
@@ -126,7 +130,7 @@ if __name__ == "__main__":
                 mutate(tree, OPERATORS, LEAVES)
 
         for tree in offspring:
-            compute_fitness(tree, targets=TARGETS)
+            annotate_fitness(tree, targets=TARGETS)
 
         population = select(population=population + offspring, k=POPULATION_SIZE)
 
@@ -135,7 +139,7 @@ if __name__ == "__main__":
             new_tree = generate_random_tree(
                 OPERATORS, LEAVES, min_depth=1, max_depth=MAX_DEPTH
             )
-            compute_fitness(new_tree, targets=TARGETS)
+            annotate_fitness(new_tree, targets=TARGETS)
             population.append(new_tree)
 
         mean_fitness = mean([tree.fitness for tree in population])
