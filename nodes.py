@@ -1,9 +1,10 @@
 import random
-from typing import Set, List, Callable, Type
+from typing import Set, List, Callable, Type, Tuple
 
 
 class Node:
     name: str
+    fitness: float
 
     def __call__(self, case_i: int = 0) -> float:
         raise NotImplementedError()
@@ -14,6 +15,7 @@ class Node:
 
 class Operator(Node):
     name: str
+    parent: Node
     child1: Node
     child2: Node
     func: Callable[[float, float], float]
@@ -48,6 +50,7 @@ class OperatorConstructor:
 
 class Leaf(Node):
     name: str
+    parent: Node = None
 
     def __call__(self, case_i: int) -> float:
         raise NotImplementedError()
