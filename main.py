@@ -1,6 +1,6 @@
 import random
 from copy import deepcopy
-from typing import Set, List, Callable, Type
+from typing import Set, List, Callable, Type, Tuple
 from statistics import mean
 from functools import partial
 
@@ -23,43 +23,84 @@ from ga_operators import crossover, mutate, select, remove_duplicates
 
 
 def compute_fitness(tree: Node, targets: List[float]):
-    deviations = []
+    total_deviation = 0
 
     for i, target in enumerate(targets):
         y = tree(case_i=i)
 
         try:
-            deviation = abs(y - target)
-            deviations.append(deviation)
+            total_deviation += abs(y - target)
         except OverflowError:
-            deviations.append(10000)
+            total_deviation = 100000
+            break 
 
-    tree.fitness = max(deviations)
+    tree.fitness = total_deviation
+
+
+def load_experiment_data() -> Tuple[List[ValueListLeafConstructor], List[float]]:
+    import json
+
+    with open("experiment_results.json", "r") as results_file:
+        experiments = json.load(results_file)
+
+    circuit_counts = []
+    gate_counts = []
+    qubit_nums = []
+    redundancies = []
+    cache_sizes = []
+    reordering_steps = []
+    merging_rounds = []
+
+    total_durations = []
+
+    for experiment in experiments:
+        circuit_counts.append(experiment["params"]["circuit_count"])
+        gate_counts.append(experiment["params"]["gate_count"])
+        qubit_nums.append(experiment["params"]["qubit_num"])
+        redundancies.append(experiment["params"]["redundancy"])
+        cache_sizes.append(experiment["params"]["cache_size"])
+        reordering_steps.append(experiment["params"]["reordering_steps"])
+        merging_rounds.append(experiment["params"]["merging_rounds"])
+
+        total_durations.append(experiment["total_duration"])
+
+    LeafConstructors = [
+        ValueListLeafConstructor("circuit count", circuit_counts),
+        ValueListLeafConstructor("gate count", gate_counts),
+        ValueListLeafConstructor("qubit num", qubit_nums),
+        ValueListLeafConstructor("redundancy", redundancies),
+        ValueListLeafConstructor("circuit size", cache_sizes),
+        ValueListLeafConstructor("reordering steps", reordering_steps),
+        ValueListLeafConstructor("mergning rounds", merging_rounds),
+    ]
+    return LeafConstructors, total_durations
 
 
 if __name__ == "__main__":
     GENERATIONS: int = 100
-    POPULATION_SIZE: int = 100
+    POPULATION_SIZE: int = 500
     MUTATION_PROB: float = 0.2
     CROSSOVER_PROB: float = 0.5
-    MAX_DEPTH: int = 4
+    MAX_DEPTH: int = 8
 
     FITNESS_THRESHOLD: float = 0.000005
 
-    INPUTS: List[float] = [-2, -1, 0, 1, 2]
-    TARGETS: List[float] = [1, -2, -3, -2, 1]
+    # INPUTS: List[float] = [-2, -1, 0, 1, 2]
+    # TARGETS: List[float] = [1, -2, -3, -2, 1]
+
+    value_list_constructors, TARGETS = load_experiment_data()
 
     OPERATORS: List[OperatorConstructor] = [
         OperatorConstructor("add", add),
         OperatorConstructor("subtract", subtract),
         OperatorConstructor("multiply", multiply),
         OperatorConstructor("divide", divide),
-        # OperatorConstructor("pow", pow),
     ]
     LEAVES = [
-        ValueListLeafConstructor("x", INPUTS),
-        RandomIntLeafConstructor("c", min_value=-10, max_value=10),
+        # ValueListLeafConstructor("x", INPUTS),
+        RandomIntLeafConstructor("c", min_value=-100, max_value=100),
     ]
+    LEAVES.extend(value_list_constructors)
 
     population: List[Node] = [
         generate_random_tree(OPERATORS, LEAVES, min_depth=1, max_depth=MAX_DEPTH)
